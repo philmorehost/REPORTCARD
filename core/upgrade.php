@@ -350,6 +350,21 @@ try {
         ");
     }
 
+    // --- Create banner_ads table ---
+    if (!table_exists($pdo, 'banner_ads')) {
+        $pdo->exec("
+            CREATE TABLE `banner_ads` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `image_url` VARCHAR(255) NOT NULL,
+                `target_link` VARCHAR(255) NOT NULL,
+                `expires_at` DATE NULL DEFAULT NULL,
+                `click_count` INT(11) NOT NULL DEFAULT 0,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+        ");
+    }
+
 } catch (PDOException $e) {
     // If the upgrade fails, it's a critical error.
     die("CRITICAL ERROR: Could not update the database schema. " . $e->getMessage());

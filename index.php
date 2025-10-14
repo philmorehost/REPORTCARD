@@ -68,12 +68,48 @@ require_once __DIR__ . '/core/init.php';
 
     <!-- Features Section -->
     <section id="features" class="py-5">
-        <div class="container text-center">
-            <h2 class="mb-5">Why Choose ARS?</h2>
-            <div class="row">
-                <div class="col-md-4 mb-4"><i class="bi bi-tools section-icon mb-3"></i><h4><?php echo c_get($pdo, 'feature1_title'); ?></h4><p><?php echo c_get($pdo, 'feature1_text'); ?></p></div>
-                <div class="col-md-4 mb-4"><i class="bi bi-cloud-arrow-up-fill section-icon mb-3"></i><h4><?php echo c_get($pdo, 'feature2_title'); ?></h4><p><?php echo c_get($pdo, 'feature2_text'); ?></p></div>
-                <div class="col-md-4 mb-4"><i class="bi bi-shield-check section-icon mb-3"></i><h4><?php echo c_get($pdo, 'feature3_title'); ?></h4><p><?php echo c_get($pdo, 'feature3_text'); ?></p></div>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="text-center">
+                        <h2 class="mb-5">Why Choose ARS?</h2>
+                        <div class="row">
+                            <div class="col-md-4 mb-4"><i class="bi bi-tools section-icon mb-3"></i><h4><?php echo c_get($pdo, 'feature1_title'); ?></h4><p><?php echo c_get($pdo, 'feature1_text'); ?></p></div>
+                            <div class="col-md-4 mb-4"><i class="bi bi-cloud-arrow-up-fill section-icon mb-3"></i><h4><?php echo c_get($pdo, 'feature2_title'); ?></h4><p><?php echo c_get($pdo, 'feature2_text'); ?></p></div>
+                            <div class="col-md-4 mb-4"><i class="bi bi-shield-check section-icon mb-3"></i><h4><?php echo c_get($pdo, 'feature3_title'); ?></h4><p><?php echo c_get($pdo, 'feature3_text'); ?></p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <?php
+                    // Fetch active banner ads that have not expired
+                    $stmt_banners = $pdo->query("SELECT * FROM banner_ads WHERE expires_at IS NULL OR expires_at >= CURDATE() ORDER BY created_at DESC");
+                    $banners = $stmt_banners->fetchAll(PDO::FETCH_ASSOC);
+                    if (!empty($banners)):
+                    ?>
+                        <div id="bannerCarousel" class="carousel slide shadow-lg rounded" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                <?php foreach ($banners as $index => $banner): ?>
+                                    <div class="carousel-item <?php echo $index === 0 ? 'active' : ''; ?>">
+                                        <a href="/public/ad_click.php?id=<?php echo $banner['id']; ?>" target="_blank">
+                                            <img src="/<?php echo htmlspecialchars($banner['image_url']); ?>" class="d-block w-100" alt="Advertisement Banner">
+                                        </a>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php if (count($banners) > 1): ?>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#bannerCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#bannerCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </section>

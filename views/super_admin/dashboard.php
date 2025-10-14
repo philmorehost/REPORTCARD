@@ -10,6 +10,7 @@ try {
     $total_students_count = $pdo->query("SELECT COUNT(id) FROM students WHERE status='active'")->fetchColumn();
     $total_teachers_count = $pdo->query("SELECT COUNT(id) FROM users WHERE role='teacher' AND status='active'")->fetchColumn();
     $pending_regs_count = $pdo->query("SELECT COUNT(id) FROM schools WHERE status = 'pending_payment'")->fetchColumn();
+    $total_banner_clicks = $pdo->query("SELECT SUM(click_count) FROM banner_ads")->fetchColumn() ?: 0;
 
     // Recent Sign-ups
     $recent_schools_stmt = $pdo->query("SELECT name, created_at FROM schools ORDER BY created_at DESC LIMIT 5");
@@ -17,7 +18,7 @@ try {
 
 } catch (PDOException $e) {
     // On error, set defaults and show an error message
-    $total_schools_count = 0; $total_students_count = 0; $total_teachers_count = 0; $pending_regs_count = 0;
+    $total_schools_count = 0; $total_students_count = 0; $total_teachers_count = 0; $pending_regs_count = 0; $total_banner_clicks = 0;
     $recent_schools = [];
     echo '<div class="alert alert-danger">Could not fetch dashboard data. Error: ' . $e->getMessage() . '</div>';
 }
@@ -52,6 +53,12 @@ try {
             <div class="card border-left-danger shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center">
                 <div class="col"><div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Pending Registrations</div><div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($pending_regs_count); ?></div></div>
                 <div class="col-auto"><i class="bi bi-person-check-fill fs-2 text-gray-300"></i></div>
+            </div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center">
+                <div class="col"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Banner Clicks</div><div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($total_banner_clicks); ?></div></div>
+                <div class="col-auto"><i class="bi bi-cursor-fill fs-2 text-gray-300"></i></div>
             </div></div></div>
         </div>
     </div>
