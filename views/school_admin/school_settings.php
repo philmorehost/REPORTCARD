@@ -49,9 +49,45 @@ $system_url = s_get($pdo, 'system_url', rtrim(APP_URL, '/'));
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-lg">Save All Settings</button>
+
+                <!-- Close Account Card -->
+                <div class="card shadow mb-4 mt-4">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="m-0 fw-bold">Close Account</h6>
+                    </div>
+                    <div class="card-body">
+                        <p>Closing your account will disable access for all administrators and teachers. The super administrator can restore your account upon request.</p>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#closeAccountModal">
+                            Close My School Account
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </form>
+</div>
+
+<!-- Close Account Modal -->
+<div class="modal fade" id="closeAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Account Closure</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to close your school's account? You and your staff will immediately lose access.</p>
+                <p class="text-danger"><strong>This action can only be undone by contacting the super administrator.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="/controllers/school_settings_controller.php" method="POST">
+                    <input type="hidden" name="action" value="close_account">
+                    <button type="submit" class="btn btn-danger">Yes, Close My Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php include 'partials/footer.php'; ?>

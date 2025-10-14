@@ -20,6 +20,9 @@ switch ($action) {
     case 'update_settings':
         handle_update_settings($pdo, $school_id);
         break;
+    case 'close_account':
+        handle_close_account($pdo, $school_id);
+        break;
     default:
         redirect_with_message('Invalid action specified.', 'error');
 }
@@ -44,6 +47,29 @@ function handle_update_settings($pdo, $school_id) {
         $stmt_lang->execute(['language' => $language, 'id' => $school_id]);
 
         redirect_with_message('Language setting updated successfully.', 'success');
+
+    } catch (PDOException $e) {
+        redirect_with_message('Database error: ' . $e->getMessage(), 'error');
+    }
+}
+
+/**
+ * Sets the school's status to 'closed'.
+ *
+ * @param PDO $pdo The database connection object.
+ * @param int $school_id The ID of the school to close.
+ */
+function handle_close_account($pdo, $school_id) {
+    try {
+        $stmt = $pdo->prepare("UPDATE schools SET status = 'closed' WHERE id = :id");
+        $stmt->execute(['id' => $school_id]);
+
+        // Log the user out
+        session_destroy();
+
+        // Redirect to a confirmation page or the main site
+        header('Location: /index.php?account_closed=true');
+        exit;
 
     } catch (PDOException $e) {
         redirect_with_message('Database error: ' . $e->getMessage(), 'error');

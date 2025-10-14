@@ -31,6 +31,9 @@ switch ($action) {
     case 'credit_sms':
         handle_credit_sms($pdo);
         break;
+    case 'delete_school':
+        handle_delete_school($pdo);
+        break;
     default:
         redirect_with_message('Invalid action specified.', 'error');
 }
@@ -193,7 +196,11 @@ function handle_toggle_status($pdo) {
             redirect_with_message('School not found.', 'error');
         }
 
-        $new_status = $school['status'] == 'active' ? 'suspended' : 'active';
+        if ($school['status'] == 'active') {
+            $new_status = 'suspended';
+        } else {
+            $new_status = 'active'; // This will activate suspended or closed accounts
+        }
 
         $update_stmt = $pdo->prepare("UPDATE schools SET status = :status WHERE id = :id");
         $update_stmt->execute(['status' => $new_status, 'id' => $school_id]);
@@ -237,6 +244,27 @@ function handle_add_credits($pdo) {
 
         $pdo->commit();
         redirect_with_message(number_format($credit_amount) . ' credits added successfully.', 'success');
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        redirect_with_message('Database error: ' . $e->getMessage(), 'error');
+    }
+}
+
+function handle_delete_school($pdo) {
+    if (empty($_POST['school_id'])) {
+        redirect_with_message('School ID is missing.', 'error');
+    }
+
+    $school_id = $_POST['school_id'];
+
+    $pdo->beginTransaction();
+    try {
+        // Since the database has ON DELETE CASCADE constraints, deleting the school will also delete related records in other tables.
+        $stmt = $pdo->prepare("DELETE FROM schools WHERE id = :id");
+        $stmt->execute(['id' => $school_id]);
+
+        $pdo->commit();
+        redirect_with_message('School and all associated data have been permanently deleted.', 'success');
     } catch (PDOException $e) {
         $pdo->rollBack();
         redirect_with_message('Database error: ' . $e->getMessage(), 'error');

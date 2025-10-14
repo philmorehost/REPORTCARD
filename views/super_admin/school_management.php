@@ -82,6 +82,7 @@ if (isset($_SESSION['message'])) {
                         <option value="active" <?php if ($status_filter == 'active') echo 'selected'; ?>>Active</option>
                         <option value="suspended" <?php if ($status_filter == 'suspended') echo 'selected'; ?>>Suspended</option>
                         <option value="pending_payment" <?php if ($status_filter == 'pending_payment') echo 'selected'; ?>>Pending Payment</option>
+                        <option value="closed" <?php if ($status_filter == 'closed') echo 'selected'; ?>>Closed</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -113,17 +114,31 @@ if (isset($_SESSION['message'])) {
                             <tr>
                                 <td><?php echo htmlspecialchars($school['name']); ?></td>
                                 <td><?php echo htmlspecialchars($school['admin_email'] ?? 'N/A'); ?></td>
-                                <td><span class="badge bg-<?php echo $school['status'] == 'active' ? 'success' : 'danger'; ?>"><?php echo ucfirst($school['status']); ?></span></td>
                                 <td>
-                                    <a href="/controllers/auth_controller.php?action=login_as&user_id=<?php echo $school['user_id']; ?>" class="btn btn-sm btn-primary" title="Login as this Admin"><i class="bi bi-box-arrow-in-right"></i> Login As</a>
-                                    <button class="btn btn-sm btn-info" onclick='prepareEditModal(<?php echo json_encode($school); ?>)' data-bs-toggle="modal" data-bs-target="#schoolModal" title="Edit"><i class="bi bi-pencil-fill"></i></button>
-                                    <a href="/controllers/school_controller.php?action=toggle_status&school_id=<?php echo $school['id']; ?>"
-                                       class="btn btn-sm btn-<?php echo $school['status'] == 'active' ? 'warning' : 'success'; ?>"
-                                       title="<?php echo $school['status'] == 'active' ? 'Suspend' : 'Activate'; ?>"
-                                       onclick="return confirm('Are you sure you want to <?php echo $school['status'] == 'active' ? 'suspend' : 'activate'; ?> this school?');">
-                                        <i class="bi bi-shield-slash-fill"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-success" onclick='prepareCreditModal(<?php echo json_encode($school); ?>)' data-bs-toggle="modal" data-bs-target="#creditModal" title="Add SMS Credits"><i class="bi bi-coin"></i></button>
+                                    <?php
+                                    $status_class = 'secondary';
+                                    if ($school['status'] == 'active') $status_class = 'success';
+                                    elseif (in_array($school['status'], ['suspended', 'closed'])) $status_class = 'danger';
+                                    elseif ($school['status'] == 'pending_payment') $status_class = 'warning';
+                                    ?>
+                                    <span class="badge bg-<?php echo $status_class; ?>"><?php echo ucfirst(str_replace('_', ' ', $school['status'])); ?></span>
+                                </td>
+                                <td>
+                                    <?php if ($school['status'] != 'closed'): ?>
+                                        <a href="/controllers/auth_controller.php?action=login_as&user_id=<?php echo $school['user_id']; ?>" class="btn btn-sm btn-primary" title="Login as this Admin"><i class="bi bi-box-arrow-in-right"></i> Login As</a>
+                                        <button class="btn btn-sm btn-info" onclick='prepareEditModal(<?php echo json_encode($school); ?>)' data-bs-toggle="modal" data-bs-target="#schoolModal" title="Edit"><i class="bi bi-pencil-fill"></i></button>
+                                    <?php endif; ?>
+
+                                    <?php if ($school['status'] == 'active'): ?>
+                                        <a href="/controllers/school_controller.php?action=toggle_status&school_id=<?php echo $school['id']; ?>" class="btn btn-sm btn-warning" title="Suspend" onclick="return confirm('Are you sure you want to suspend this school?');"><i class="bi bi-shield-slash-fill"></i></a>
+                                    <?php elseif (in_array($school['status'], ['suspended', 'closed'])): ?>
+                                        <a href="/controllers/school_controller.php?action=toggle_status&school_id=<?php echo $school['id']; ?>" class="btn btn-sm btn-success" title="Activate/Restore" onclick="return confirm('Are you sure you want to activate/restore this school?');"><i class="bi bi-shield-check"></i></a>
+                                    <?php endif; ?>
+
+                                    <?php if ($school['status'] != 'closed'): ?>
+                                        <button class="btn btn-sm btn-success" onclick='prepareCreditModal(<?php echo json_encode($school); ?>)' data-bs-toggle="modal" data-bs-target="#creditModal" title="Add SMS Credits"><i class="bi bi-coin"></i></button>
+                                    <?php endif; ?>
+                                    <button class="btn btn-sm btn-danger" onclick='prepareDeleteModal(<?php echo json_encode($school); ?>)' data-bs-toggle="modal" data-bs-target="#deleteModal" title="Delete School"><i class="bi bi-trash-fill"></i></button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -207,6 +222,34 @@ function prepareCreditModal(school) {
     document.getElementById('creditSchoolId').value = school.id;
     document.getElementById('creditSchoolName').innerText = school.name;
 }
+function prepareDeleteModal(school) {
+    document.getElementById('deleteSchoolName').innerText = school.name;
+    document.getElementById('deleteSchoolId').value = school.id;
+}
 </script>
+
+<!-- Delete School Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deleteForm" action="/controllers/school_controller.php" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete_school">
+                    <input type="hidden" name="school_id" id="deleteSchoolId">
+                    <p>Are you sure you want to permanently delete <strong id="deleteSchoolName"></strong>?</p>
+                    <p class="text-danger"><strong>Warning:</strong> This action is irreversible and will delete all associated data, including teachers, students, subjects, and report cards.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete School</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <?php include 'partials/footer.php'; ?>

@@ -194,6 +194,9 @@ try {
         $pdo->exec("ALTER TABLE `schools` ADD COLUMN `school_level` ENUM('k-12', 'tertiary') NOT NULL DEFAULT 'k-12' AFTER `name`;");
     }
 
+    // --- Modify schools status column to include closed ---
+    $pdo->exec("ALTER TABLE `schools` MODIFY COLUMN `status` ENUM('active', 'suspended', 'pending_payment', 'closed') NOT NULL DEFAULT 'active';");
+
     if (!column_exists($pdo, 'students', 'parent_name')) {
         $pdo->exec("ALTER TABLE `students` ADD COLUMN `parent_name` VARCHAR(255) NULL AFTER `class`;");
     }
