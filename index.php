@@ -176,11 +176,7 @@ require_once __DIR__ . '/core/init.php';
                             <h4>WhatsApp</h4>
                             <p>Send us a message for a quick response.</p>
                             <?php
-                            $super_admin_phone = '';
-                            try {
-                                $stmt = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'contact_phone'");
-                                $super_admin_phone = $stmt->fetchColumn();
-                            } catch (PDOException $e) {}
+                            $super_admin_phone = c_get($pdo, 'contact_phone');
                             ?>
                             <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $super_admin_phone); ?>" class="btn btn-success btn-lg mt-3" target="_blank">
                                 <i class="bi bi-whatsapp me-2"></i> Chat Now
