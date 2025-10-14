@@ -81,6 +81,25 @@ function handle_save_grades($pdo, $teacher_id, $school_id) {
             ]);
         }
 
+        // Send notification email to school admin
+        $stmt_admin = $pdo->prepare("SELECT email, full_name FROM users WHERE school_id = :school_id AND role = 'school_admin' LIMIT 1");
+        $stmt_admin->execute(['school_id' => $school_id]);
+        $admin_info = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+
+        if ($admin_info) {
+            $teacher_name = $_SESSION['user_name'] ?? 'A teacher';
+            $stmt_class = $pdo->prepare("SELECT class_name FROM classes WHERE id = :class_id");
+            $stmt_class->execute(['class_id' => $class_id]);
+            $class_name = $stmt_class->fetchColumn();
+
+            $subject = "Grades Updated for " . htmlspecialchars($class_name);
+            $body = "
+                <p>Hi " . htmlspecialchars($admin_info['full_name']) . ",</p>
+                <p>This is a notification to inform you that " . htmlspecialchars($teacher_name) . " has just updated the grades for the class: <strong>" . htmlspecialchars($class_name) . "</strong>.</p>
+            ";
+            send_email($pdo, $admin_info['email'], $subject, $body);
+        }
+
         $pdo->commit();
         redirect_with_message('Grades saved successfully!', 'success', $redirect_url);
 

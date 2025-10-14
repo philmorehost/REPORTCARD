@@ -83,6 +83,20 @@ function handle_credit_sms($pdo) {
         $stmt_add = $pdo->prepare("UPDATE schools SET sms_credits = sms_credits + :credits WHERE id = :id");
         $stmt_add->execute(['credits' => $credits_to_add, 'id' => $school_id]);
 
+        // Get admin email for notification
+        $stmt_email = $pdo->prepare("SELECT u.email, u.full_name FROM users u WHERE u.school_id = :id AND u.role = 'school_admin' LIMIT 1");
+        $stmt_email->execute(['id' => $school_id]);
+        $admin_info = $stmt_email->fetch(PDO::FETCH_ASSOC);
+
+        if ($admin_info) {
+            $subject = "Your SMS Account Has Been Credited";
+            $body = "
+                <p>Hi " . htmlspecialchars($admin_info['full_name']) . ",</p>
+                <p>This is a notification to confirm that your SMS account has been credited with " . number_format($credits_to_add) . " units by the super administrator.</p>
+            ";
+            send_email($pdo, $admin_info['email'], $subject, $body);
+        }
+
         $pdo->commit();
         redirect_with_message(number_format($credits_to_add) . ' SMS credits added successfully.', 'success', '/views/super_admin/credit_school.php');
     } catch (PDOException $e) {
@@ -188,22 +202,27 @@ function handle_toggle_status($pdo) {
     $school_id = $_GET['school_id'];
 
     try {
-        $stmt = $pdo->prepare("SELECT status FROM schools WHERE id = :id");
+        $stmt = $pdo->prepare("SELECT s.status, u.email, u.full_name FROM schools s JOIN users u ON s.id = u.school_id WHERE s.id = :id AND u.role = 'school_admin' LIMIT 1");
         $stmt->execute(['id' => $school_id]);
-        $school = $stmt->fetch(PDO::FETCH_ASSOC);
+        $school_info = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$school) {
-            redirect_with_message('School not found.', 'error');
+        if (!$school_info) {
+            redirect_with_message('School or school admin not found.', 'error');
         }
 
-        if ($school['status'] == 'active') {
-            $new_status = 'suspended';
-        } else {
-            $new_status = 'active'; // This will activate suspended or closed accounts
-        }
+        $new_status = ($school_info['status'] == 'active') ? 'suspended' : 'active';
 
         $update_stmt = $pdo->prepare("UPDATE schools SET status = :status WHERE id = :id");
         $update_stmt->execute(['status' => $new_status, 'id' => $school_id]);
+
+        // Send email notification
+        $subject = "Your Account has been " . ucfirst($new_status);
+        $body = "
+            <p>Hi " . htmlspecialchars($school_info['full_name']) . ",</p>
+            <p>This is a notification that your school's account has been " . htmlspecialchars($new_status) . " by the super administrator.</p>
+            <p>If you have any questions, please contact support.</p>
+        ";
+        send_email($pdo, $school_info['email'], $subject, $body);
 
         redirect_with_message("School status updated to '{$new_status}'.", 'success');
 
@@ -259,9 +278,25 @@ function handle_delete_school($pdo) {
 
     $pdo->beginTransaction();
     try {
+        // Fetch admin email before deleting
+        $stmt_email = $pdo->prepare("SELECT u.email, u.full_name FROM users u WHERE u.school_id = :id AND u.role = 'school_admin' LIMIT 1");
+        $stmt_email->execute(['id' => $school_id]);
+        $admin_info = $stmt_email->fetch(PDO::FETCH_ASSOC);
+
         // Since the database has ON DELETE CASCADE constraints, deleting the school will also delete related records in other tables.
         $stmt = $pdo->prepare("DELETE FROM schools WHERE id = :id");
         $stmt->execute(['id' => $school_id]);
+
+        // Send email notification after successful deletion
+        if ($admin_info) {
+            $subject = "Your Account Has Been Permanently Deleted";
+            $body = "
+                <p>Hi " . htmlspecialchars($admin_info['full_name']) . ",</p>
+                <p>This is a notification to confirm that your school's account and all associated data have been permanently deleted from our system by the super administrator.</p>
+                <p>This action cannot be undone. If you believe this was in error, please contact our support team immediately.</p>
+            ";
+            send_email($pdo, $admin_info['email'], $subject, $body);
+        }
 
         $pdo->commit();
         redirect_with_message('School and all associated data have been permanently deleted.', 'success');

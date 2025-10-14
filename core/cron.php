@@ -10,6 +10,7 @@
 // In a real production environment, you might also want to restrict access by IP address.
 
 require_once __DIR__ . '/init.php'; // Use init to ensure config is loaded
+require_once __DIR__ . '/email.php';
 
 // --- Security Check ---
 // 1. Fetch the secret key from the database
@@ -41,9 +42,9 @@ if (empty($provided_key) || $provided_key !== $secret_key) {
 
 
 // --- Cron Job Logic ---
-echo "Cron job executed successfully at " . date('Y-m-d H:i:s') . "\n";
+echo "Cron job executed successfully at " . date('Y-m-d H-i-s') . "\n";
 
-// --- Task 1: Suspend Expired School Accounts ---
+// --- Task 1: Suspend Expired School Accounts (Daily) ---
 try {
     $stmt_grace = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'grace_period_days'");
     $grace_period_days = (int)($stmt_grace->fetchColumn() ?: 7);
@@ -72,8 +73,53 @@ try {
 }
 
 
-// --- Placeholder for other future tasks ---
-// echo "Ran other tasks...\n";
+// --- Task 2: Send Weekly SMS Usage Reports (Weekly on Sunday) ---
+if (date('w') == 0) { // 0 = Sunday
+    send_weekly_sms_reports($pdo);
+}
+
+function send_weekly_sms_reports($pdo) {
+    try {
+        // Get all active schools
+        $stmt_schools = $pdo->query("SELECT id, name FROM schools WHERE status = 'active'");
+        $schools = $stmt_schools->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($schools as $school) {
+            // Get the school admin's email
+            $stmt_admin = $pdo->prepare("SELECT email, full_name FROM users WHERE school_id = :school_id AND role = 'school_admin' LIMIT 1");
+            $stmt_admin->execute(['school_id' => $school['id']]);
+            $admin_info = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+
+            if ($admin_info) {
+                // Calculate SMS usage for the last 7 days
+                $stmt_sms = $pdo->prepare("SELECT COUNT(id) as sms_count, SUM(cost) as total_cost FROM sms_log WHERE school_id = :school_id AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+                $stmt_sms->execute(['school_id' => $school['id']]);
+                $sms_usage = $stmt_sms->fetch(PDO::FETCH_ASSOC);
+
+                $sms_count = $sms_usage['sms_count'] ?? 0;
+                $total_cost = $sms_usage['total_cost'] ?? 0;
+
+                // Send the report email
+                $subject = "Your Weekly SMS Usage Report";
+                $body = "
+                    <p>Hi " . htmlspecialchars($admin_info['full_name']) . ",</p>
+                    <p>Here is your SMS usage report for the past 7 days for " . htmlspecialchars($school['name']) . ":</p>
+                    <ul>
+                        <li><strong>SMS Messages Sent:</strong> " . number_format($sms_count) . "</li>
+                        <li><strong>Total Cost:</strong> " . number_format($total_cost, 4) . " credits</li>
+                    </ul>
+                    <p>You can view your full SMS history in your school's dashboard.</p>
+                ";
+                send_email($pdo, $admin_info['email'],  $subject, $body);
+            }
+        }
+        echo "Sent weekly SMS usage reports.\n";
+    } catch (PDOException $e) {
+        // Log the error
+        error_log("Error in send_weekly_sms_reports cron job: " . $e->getMessage());
+        echo "CRON ERROR during SMS report generation: " . $e->getMessage() . "\n";
+    }
+}
 
 
 // --- End of Cron Job ---

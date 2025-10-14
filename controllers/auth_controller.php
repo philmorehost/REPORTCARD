@@ -55,6 +55,16 @@ function handle_login($pdo) {
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['user_name'] = $user['full_name'];
             if ($user['school_id']) { $_SESSION['school_id'] = $user['school_id']; }
+
+            // Send login notification email
+            $subject = "Security Alert: New Login to Your Account";
+            $body = "
+                <p>Hi " . htmlspecialchars($user['full_name']) . ",</p>
+                <p>This is a notification that your account was just accessed. If this was you, you can safely ignore this email.</p>
+                <p>If you do not recognize this activity, please reset your password immediately and contact support.</p>
+            ";
+            send_email($pdo, $email, $subject, $body);
+
             $redirect_path = ['super_admin' => '/views/super_admin/dashboard.php', 'school_admin' => '/views/school_admin/dashboard.php', 'teacher' => '/views/teacher/dashboard.php'];
             header('Location: ' . ($redirect_path[$user['role']] ?? '/index.php'));
             exit;

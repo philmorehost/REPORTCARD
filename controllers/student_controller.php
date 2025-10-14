@@ -43,9 +43,12 @@ function handle_create_student($pdo, $school_id) {
             "SELECT
                 (SELECT COUNT(id) FROM students WHERE school_id = :school_id AND status = 'active') as current_students,
                 s.student_slots as total_slots,
-                p.name as package_name
+                p.name as package_name,
+                u.email as admin_email,
+                u.full_name as admin_name
              FROM schools s
              LEFT JOIN packages p ON s.package_id = p.id
+             JOIN users u ON s.id = u.school_id AND u.role = 'school_admin'
              WHERE s.id = :school_id"
         );
         $stmt_check->execute(['school_id' => $school_id]);
@@ -71,6 +74,17 @@ function handle_create_student($pdo, $school_id) {
             ':p_email' => $_POST['parent_email'] ?? null,
             ':p_phone' => $_POST['parent_phone_number'] ?? null
         ]);
+
+        // Send notification email
+        if ($check_info && $check_info['admin_email']) {
+            $subject = "New Student Added: " . htmlspecialchars($_POST['full_name']);
+            $body = "
+                <p>Hi " . htmlspecialchars($check_info['admin_name']) . ",</p>
+                <p>A new student, " . htmlspecialchars($_POST['full_name']) . ", has been added to your school.</p>
+            ";
+            send_email($pdo, $check_info['admin_email'], $subject, $body);
+        }
+
         redirect_with_message('Student added successfully.', 'success');
     } catch (PDOException $e) {
         if ($e->errorInfo[1] == 1062) {
@@ -106,8 +120,24 @@ function handle_update_student($pdo, $school_id) {
 function handle_delete_student($pdo, $school_id) {
     if (empty($_GET['id'])) { redirect_with_message('Student ID is missing.', 'error'); }
     try {
+        // Fetch student and admin info before deleting
+        $stmt_info = $pdo->prepare("SELECT s.full_name as student_name, u.email as admin_email, u.full_name as admin_name FROM students s JOIN users u ON s.school_id = u.school_id WHERE s.id = :id AND s.school_id = :school_id AND u.role = 'school_admin' LIMIT 1");
+        $stmt_info->execute([':id' => $_GET['id'], ':school_id' => $school_id]);
+        $info = $stmt_info->fetch(PDO::FETCH_ASSOC);
+
         $stmt = $pdo->prepare("DELETE FROM students WHERE id = :id AND school_id = :school_id");
         $stmt->execute([':id' => $_GET['id'], ':school_id' => $school_id]);
+
+        // Send notification email
+        if ($info) {
+            $subject = "Student Removed: " . htmlspecialchars($info['student_name']);
+            $body = "
+                <p>Hi " . htmlspecialchars($info['admin_name']) . ",</p>
+                <p>The student, " . htmlspecialchars($info['student_name']) . ", has been removed from your school.</p>
+            ";
+            send_email($pdo, $info['admin_email'], $subject, $body);
+        }
+
         redirect_with_message('Student deleted successfully.', 'success');
     } catch (PDOException $e) {
         redirect_with_message('Database error: ' . $e->getMessage(), 'error');

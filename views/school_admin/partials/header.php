@@ -76,6 +76,7 @@ if (($school['student_slots'] ?? 0) <= 0) {
             <li><a href="/views/school_admin/billing.php" class="nav-link <?php echo $current_page == 'billing.php' ? 'active' : ''; ?>"><i class="bi bi-credit-card-fill me-2"></i><?php echo __('billing_slots'); ?></a></li>
             <li><a href="/views/school_admin/sms.php" class="nav-link <?php echo $current_page == 'sms.php' ? 'active' : ''; ?>"><i class="bi bi-chat-left-text-fill me-2"></i>SMS & Notifications</a></li>
             <li><a href="/views/school_admin/sender_id.php" class="nav-link <?php echo $current_page == 'sender_id.php' ? 'active' : ''; ?>"><i class="bi bi-person-badge-fill me-2"></i>Sender ID</a></li>
+            <li><a href="/views/school_admin/support_tickets.php" class="nav-link <?php echo in_array($current_page, ['support_tickets.php', 'view_ticket.php', 'create_ticket.php']) ? 'active' : ''; ?>"><i class="bi bi-question-circle-fill me-2"></i>Support</a></li>
         </ul>
         <hr class="text-secondary">
         <div class="dropdown"><a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-circle me-2"></i><strong><?php echo htmlspecialchars($_SESSION['user_name']); ?></strong></a>

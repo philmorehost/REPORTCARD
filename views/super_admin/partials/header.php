@@ -68,6 +68,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <li><a href="/views/super_admin/report_templates.php" class="nav-link <?php echo $current_page == 'report_templates.php' ? 'active' : ''; ?>"><i class="bi bi-journal-text me-2"></i>Report Templates</a></li>
             <li><a href="/views/super_admin/cms_management.php" class="nav-link <?php echo $current_page == 'cms_management.php' ? 'active' : ''; ?>"><i class="bi bi-file-earmark-text-fill me-2"></i>Landing Page CMS</a></li>
             <li><a href="/views/super_admin/system_settings.php" class="nav-link <?php echo $current_page == 'system_settings.php' ? 'active' : ''; ?>"><i class="bi bi-gear me-2"></i>System Settings</a></li>
+            <li><a href="/views/super_admin/support_tickets.php" class="nav-link <?php echo in_array($current_page, ['support_tickets.php', 'view_ticket.php']) ? 'active' : ''; ?>"><i class="bi bi-question-circle-fill me-2"></i>Support Tickets</a></li>
         </ul>
         <hr>
         <div class="dropdown"><a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-person-circle me-2"></i><strong><?php echo htmlspecialchars($_SESSION['user_name']); ?></strong></a><ul class="dropdown-menu dropdown-menu-dark text-small shadow"><li><a class="dropdown-item" href="/controllers/auth_controller.php?action=logout">Sign out</a></li></ul></div>

@@ -316,6 +316,40 @@ try {
         ");
     }
 
+    // --- Create support_tickets table ---
+    if (!table_exists($pdo, 'support_tickets')) {
+        $pdo->exec("
+            CREATE TABLE `support_tickets` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `school_id` INT(11) NOT NULL,
+                `user_id` INT(11) NOT NULL,
+                `subject` VARCHAR(255) NOT NULL,
+                `status` ENUM('open', 'in_progress', 'closed') NOT NULL DEFAULT 'open',
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`) ON DELETE CASCADE,
+                FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+        ");
+    }
+
+    // --- Create support_ticket_replies table ---
+    if (!table_exists($pdo, 'support_ticket_replies')) {
+        $pdo->exec("
+            CREATE TABLE `support_ticket_replies` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `ticket_id` INT(11) NOT NULL,
+                `user_id` INT(11) NOT NULL,
+                `message` TEXT NOT NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets`(`id`) ON DELETE CASCADE,
+                FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+        ");
+    }
+
 } catch (PDOException $e) {
     // If the upgrade fails, it's a critical error.
     die("CRITICAL ERROR: Could not update the database schema. " . $e->getMessage());

@@ -228,6 +228,22 @@ function create_school_and_admin($pdo, $reg_data, $status, $slots) {
     ";
     send_email($pdo, $reg_data['admin_email'], $subject, $body);
 
+    // Also notify the super admin of the new registration
+    $super_admin_email = s_get($pdo, 'super_admin_email');
+    if ($super_admin_email) {
+        $sa_subject = "New School Registration: " . htmlspecialchars($reg_data['school_name']);
+        $sa_body = "
+            <p>A new school has registered on the platform:</p>
+            <ul>
+                <li><strong>School Name:</strong> " . htmlspecialchars($reg_data['school_name']) . "</li>
+                <li><strong>Admin Name:</strong> " . htmlspecialchars($reg_data['admin_name']) . "</li>
+                <li><strong>Admin Email:</strong> " . htmlspecialchars($reg_data['admin_email']) . "</li>
+                <li><strong>Package:</strong> " . htmlspecialchars($reg_data['package_name']) . "</li>
+                <li><strong>Status:</strong> " . htmlspecialchars(ucfirst($status)) . "</li>
+            </ul>
+        ";
+        send_email($pdo, $super_admin_email, $sa_subject, $sa_body);
+    }
 
     return $school_id;
 }

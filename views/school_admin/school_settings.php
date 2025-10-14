@@ -59,6 +59,13 @@ $system_url = s_get($pdo, 'system_url', rtrim(APP_URL, '/'));
                             <input type="text" class="form-control" id="custom_domain" name="custom_domain" value="<?php echo htmlspecialchars($school['custom_domain'] ?? ''); ?>" placeholder="e.g., reports.myschool.com">
                             <div class="form-text">If left empty, the default system domain will be used: <strong><?php echo htmlspecialchars($system_url); ?></strong></div>
                         </div>
+                        <hr>
+                        <div class="alert alert-info">
+                            <h6 class="fw-bold">How to set up your custom domain:</h6>
+                            <p class="mb-1">To use your own domain, you need to create an <strong>A Record</strong> with your domain registrar (e.g., GoDaddy, Namecheap) and point it to our server's IP address.</p>
+                            <p class="mb-0"><strong>Server IP Address:</strong> <code><?php echo $_SERVER['SERVER_ADDR'] ?? '127.0.0.1'; ?></code></p>
+                            <small class="text-muted">DNS changes can take up to 24 hours to propagate. If you need help, please contact support.</small>
+                        </div>
                     </div>
                 </div>
 

@@ -23,6 +23,9 @@ switch ($action) {
     case 'update':
         handle_update_teacher($pdo, $school_id);
         break;
+    case 'delete':
+        handle_delete_teacher($pdo, $school_id);
+        break;
     default:
         redirect_with_message('Invalid action specified.', 'error');
 }
@@ -98,6 +101,39 @@ function handle_update_teacher($pdo, $school_id) {
         if ($e->errorInfo[1] == 1062) { // Duplicate email
             redirect_with_message('A user with this email address already exists in the system.', 'error');
         }
+        redirect_with_message('Database error: ' . $e->getMessage(), 'error');
+    }
+}
+
+function handle_delete_teacher($pdo, $school_id) {
+    if (empty($_GET['id'])) {
+        redirect_with_message('Teacher ID is missing.', 'error');
+    }
+
+    $teacher_id = $_GET['id'];
+
+    try {
+        // Fetch teacher and admin info before deleting
+        $stmt_info = $pdo->prepare("SELECT t.full_name as teacher_name, u.email as admin_email, u.full_name as admin_name FROM users t JOIN users u ON t.school_id = u.school_id WHERE t.id = :id AND t.school_id = :school_id AND u.role = 'school_admin' LIMIT 1");
+        $stmt_info->execute([':id' => $teacher_id, ':school_id' => $school_id]);
+        $info = $stmt_info->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = :id AND school_id = :school_id AND role = 'teacher'");
+        $stmt->execute([':id' => $teacher_id, ':school_id' => $school_id]);
+
+        // Send notification email
+        if ($info) {
+            $subject = "Teacher Account Removed: " . htmlspecialchars($info['teacher_name']);
+            $body = "
+                <p>Hi " . htmlspecialchars($info['admin_name']) . ",</p>
+                <p>The teacher account for " . htmlspecialchars($info['teacher_name']) . " has been removed from your school.</p>
+            ";
+            send_email($pdo, $info['admin_email'], $subject, $body);
+        }
+
+        redirect_with_message('Teacher account deleted successfully.', 'success');
+
+    } catch (PDOException $e) {
         redirect_with_message('Database error: ' . $e->getMessage(), 'error');
     }
 }
