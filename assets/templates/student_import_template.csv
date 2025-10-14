@@ -1,0 +1,4 @@
+full_name,student_id_number,class,parent_name,parent_email,parent_phone_number
+"John Doe","JD-001","Grade 5","David Doe","parent.doe@example.com","+12025550104"
+"Jane Smith","JS-002","Grade 5","Sarah Smith","parent.smith@example.com","+442071234567"
+"Peter Jones","PJ-003","Grade 6","Paul Jones","parent.jones@example.com","+2348012345678"
