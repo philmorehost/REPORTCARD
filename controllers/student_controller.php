@@ -9,6 +9,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../core/init.php';
 require_once __DIR__ . '/../core/auth_check.php';
+require_once __DIR__ . '/../core/email.php';
 
 // Ensure only school admins can execute these actions
 require_auth('school_admin');
