@@ -140,9 +140,15 @@ try {
                             <input type="email" class="form-control" id="admin_email" name="admin_email" required>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="admin_password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="admin_password" name="admin_password" required>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="admin_password" name="admin_password" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
                     </div>
 
                     <div class="d-grid mt-4">

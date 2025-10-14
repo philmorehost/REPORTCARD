@@ -262,6 +262,52 @@ try {
         }
     }
 
+    // --- Add email verification columns to users table ---
+    if (!column_exists($pdo, 'users', 'email_verification_token')) {
+        $pdo->exec("ALTER TABLE `users` ADD COLUMN `email_verification_token` VARCHAR(255) NULL DEFAULT NULL AFTER `full_name`;");
+    }
+    if (!column_exists($pdo, 'users', 'email_verified_at')) {
+        $pdo->exec("ALTER TABLE `users` ADD COLUMN `email_verified_at` TIMESTAMP NULL DEFAULT NULL AFTER `email_verification_token`;");
+    }
+
+    // --- Modify users status column to include unverified ---
+    $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `status` ENUM('active', 'inactive', 'unverified') NOT NULL DEFAULT 'unverified';");
+
+    // --- Add password reset columns to users table ---
+    if (!column_exists($pdo, 'users', 'password_reset_token')) {
+        $pdo->exec("ALTER TABLE `users` ADD COLUMN `password_reset_token` VARCHAR(255) NULL DEFAULT NULL AFTER `email_verified_at`;");
+    }
+    if (!column_exists($pdo, 'users', 'password_reset_expires_at')) {
+        $pdo->exec("ALTER TABLE `users` ADD COLUMN `password_reset_expires_at` TIMESTAMP NULL DEFAULT NULL AFTER `password_reset_token`;");
+    }
+
+    // --- Create subjects table ---
+    if (!table_exists($pdo, 'subjects')) {
+        $pdo->exec("
+            CREATE TABLE `subjects` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `school_id` INT(11) NOT NULL,
+                `subject_name` VARCHAR(255) NOT NULL,
+                PRIMARY KEY (`id`),
+                FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+        ");
+    }
+
+    // --- Create subject_teacher_assignments table ---
+    if (!table_exists($pdo, 'subject_teacher_assignments')) {
+        $pdo->exec("
+            CREATE TABLE `subject_teacher_assignments` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `subject_id` INT(11) NOT NULL,
+                `teacher_id` INT(11) NOT NULL,
+                PRIMARY KEY (`id`),
+                FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE,
+                FOREIGN KEY (`teacher_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+        ");
+    }
+
 } catch (PDOException $e) {
     // If the upgrade fails, it's a critical error.
     die("CRITICAL ERROR: Could not update the database schema. " . $e->getMessage());

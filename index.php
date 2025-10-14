@@ -153,11 +153,42 @@ require_once __DIR__ . '/core/init.php';
 
     <!-- Contact Section -->
     <section id="contact" class="bg-light py-5">
-        <div class="container text-center">
-            <h2>Have Questions?</h2>
-            <p class="lead">Our team is here to help. Reach out to us anytime.</p>
-            <p class="h4 mt-4"><i class="bi bi-envelope-fill me-2"></i> <?php echo c_get($pdo, 'contact_email'); ?></p>
-            <p class="h4"><i class="bi bi-telephone-fill me-2"></i> <?php echo c_get($pdo, 'contact_phone'); ?></p>
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>Have Questions?</h2>
+                <p class="lead">Our team is here to help. Reach out to us anytime.</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-5 mb-4">
+                    <div class="card h-100 shadow-sm" style="border: none;">
+                        <div class="card-body p-4 text-center">
+                            <i class="bi bi-envelope-fill section-icon mb-3"></i>
+                            <h4>Email & Phone</h4>
+                            <p class="h5 mt-4"><a href="mailto:<?php echo c_get($pdo, 'contact_email'); ?>" class="text-decoration-none"><?php echo c_get($pdo, 'contact_email'); ?></a></p>
+                            <p class="h5"><a href="tel:<?php echo c_get($pdo, 'contact_phone'); ?>" class="text-decoration-none"><?php echo c_get($pdo, 'contact_phone'); ?></a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5 mb-4">
+                    <div class="card h-100 shadow-sm" style="border: none;">
+                        <div class="card-body p-4 text-center">
+                            <i class="bi bi-whatsapp section-icon mb-3"></i>
+                            <h4>WhatsApp</h4>
+                            <p>Send us a message for a quick response.</p>
+                            <?php
+                            $super_admin_phone = '';
+                            try {
+                                $stmt = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'contact_phone'");
+                                $super_admin_phone = $stmt->fetchColumn();
+                            } catch (PDOException $e) {}
+                            ?>
+                            <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $super_admin_phone); ?>" class="btn btn-success btn-lg mt-3" target="_blank">
+                                <i class="bi bi-whatsapp me-2"></i> Chat Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 

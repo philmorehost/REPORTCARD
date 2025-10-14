@@ -93,11 +93,12 @@ function handle_credit_sms($pdo) {
 }
 
 function handle_create_school($pdo) {
-    if (empty($_POST['school_name']) || empty($_POST['admin_name']) || empty($_POST['admin_email']) || empty($_POST['admin_password'])) {
+    if (empty($_POST['school_name']) || empty($_POST['admin_name']) || empty($_POST['admin_email']) || empty($_POST['admin_password']) || empty($_POST['package_id'])) {
         redirect_with_message('All fields are required to create a new school.', 'error');
     }
 
     $school_name = $_POST['school_name'];
+    $package_id = $_POST['package_id'];
     $admin_name = $_POST['admin_name'];
     $admin_email = filter_input(INPUT_POST, 'admin_email', FILTER_VALIDATE_EMAIL);
     $admin_password = password_hash($_POST['admin_password'], PASSWORD_BCRYPT);
@@ -108,8 +109,8 @@ function handle_create_school($pdo) {
 
     $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare("INSERT INTO schools (name) VALUES (:name)");
-        $stmt->execute(['name' => $school_name]);
+        $stmt = $pdo->prepare("INSERT INTO schools (name, package_id) VALUES (:name, :package_id)");
+        $stmt->execute(['name' => $school_name, 'package_id' => $package_id]);
         $school_id = $pdo->lastInsertId();
 
         $stmt = $pdo->prepare(

@@ -15,6 +15,9 @@ switch ($action) {
     case 'login':
         handle_login($pdo);
         break;
+    case 'resend_verification':
+        handle_resend_verification($pdo);
+        break;
     case 'logout':
         handle_logout();
         break;
@@ -36,10 +39,18 @@ function handle_login($pdo) {
     $password = $_POST['password'] ?? '';
     if (!$email || empty($password)) { redirect_with_error('Email and password are required.', $role); }
     try {
-        $stmt = $pdo->prepare("SELECT id, password, full_name, role, school_id FROM users WHERE email = :email AND role = :role AND status = 'active'");
+        $stmt = $pdo->prepare("SELECT id, password, full_name, role, school_id, status FROM users WHERE email = :email AND role = :role");
         $stmt->execute(['email' => $email, 'role' => $role]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if ($user && password_verify($password, $user['password'])) {
+            if ($user['status'] === 'unverified') {
+                $resend_link = "/controllers/auth_controller.php?action=resend_verification&email=" . urlencode($email);
+                redirect_with_error("Your email is not verified. Please check your inbox or <a href='{$resend_link}'>resend the verification email</a>.", $role);
+            } elseif ($user['status'] !== 'active') {
+                redirect_with_error("Your account is inactive. Please contact support.", $role);
+            }
+
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['user_name'] = $user['full_name'];
@@ -52,6 +63,49 @@ function handle_login($pdo) {
         }
     } catch (PDOException $e) {
         redirect_with_error('Database error. Please try again later.', $role);
+    }
+}
+
+function handle_resend_verification($pdo) {
+    $email = filter_input(INPUT_GET, 'email', FILTER_VALIDATE_EMAIL);
+    if (!$email) {
+        // Redirect to a generic error page or login page
+        header('Location: /index.php?error=Invalid email provided.');
+        exit;
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT id, full_name, status FROM users WHERE email = :email");
+        $stmt->execute(['email' => $email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && $user['status'] === 'unverified') {
+            $verification_token = bin2hex(random_bytes(32));
+
+            $stmt_update = $pdo->prepare("UPDATE users SET email_verification_token = :token WHERE id = :id");
+            $stmt_update->execute([':token' => $verification_token, ':id' => $user['id']]);
+
+            // Resend verification email
+            $verification_link = get_site_url() . "/verify_email.php?token=" . $verification_token;
+            $subject = "Verify Your Email Address";
+            $body = "
+                <p>Hi " . htmlspecialchars($user['full_name']) . ",</p>
+                <p>Please click the link below to verify your email address:</p>
+                <p><a href='" . $verification_link . "'>" . $verification_link . "</a></p>
+            ";
+            send_email($pdo, $email, $subject, $body);
+
+            // Redirect to a page informing the user that the email has been resent
+            header('Location: /register_pending_verification.php?resent=true');
+            exit;
+        } else {
+            // User not found or already verified, redirect them
+            header('Location: /views/school_admin/login.php?error=' . urlencode('User not found or already verified.'));
+            exit;
+        }
+    } catch (PDOException $e) {
+        header('Location: /index.php?error=Database error.');
+        exit;
     }
 }
 

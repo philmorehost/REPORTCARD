@@ -71,6 +71,9 @@
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary btn-lg">Login</button>
             </div>
+            <div class="text-center mt-3">
+                <a href="forgot_password.php">Forgot Password?</a>
+            </div>
         </form>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"></script>

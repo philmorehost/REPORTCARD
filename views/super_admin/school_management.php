@@ -5,6 +5,10 @@ require_once __DIR__ . '/../../config/config.php'; // Re-include to be sure $pdo
 
 // Fetch schools and their admins from the database
 try {
+    // Fetch packages for the modal
+    $stmt_packages = $pdo->query("SELECT id, name FROM packages ORDER BY name");
+    $packages = $stmt_packages->fetchAll(PDO::FETCH_ASSOC);
+
     $search_term = $_GET['search'] ?? '';
     $status_filter = $_GET['status'] ?? '';
 
@@ -138,6 +142,17 @@ if (isset($_SESSION['message'])) {
         <div class="modal-body">
             <input type="hidden" name="action" id="formAction" value="create"><input type="hidden" name="school_id" id="schoolId"><input type="hidden" name="user_id" id="userId">
             <div class="mb-3"><label for="schoolName" class="form-label">School Name</label><input type="text" class="form-control" id="schoolName" name="school_name" required></div>
+
+            <div class="mb-3">
+                <label for="packageId" class="form-label">Subscription Package</label>
+                <select class="form-select" id="packageId" name="package_id" required>
+                    <option value="">Select a Package...</option>
+                    <?php foreach ($packages as $package): ?>
+                        <option value="<?php echo $package['id']; ?>"><?php echo htmlspecialchars($package['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <hr><h6 class="text-muted">School Administrator Account</h6><p class="text-muted small">Create or update the primary administrator account for this school.</p>
             <div class="row">
                 <div class="col-md-6 mb-3"><label for="adminName" class="form-label">Admin Full Name</label><input type="text" class="form-control" id="adminName" name="admin_name" required></div>

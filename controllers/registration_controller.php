@@ -33,13 +33,19 @@ switch ($action) {
  */
 function handle_registration_start($pdo) {
     // 1. Validation
-    $required_fields = ['package_id', 'school_name', 'admin_name', 'admin_email', 'admin_password'];
+    $required_fields = ['package_id', 'school_name', 'admin_name', 'admin_email', 'admin_password', 'confirm_password'];
     foreach ($required_fields as $field) {
         if (empty($_POST[$field])) {
             $_SESSION['error'] = 'All fields are required.';
             header('Location: /register.php');
             exit;
         }
+    }
+
+    if ($_POST['admin_password'] !== $_POST['confirm_password']) {
+        $_SESSION['error'] = 'Passwords do not match.';
+        header('Location: /register.php');
+        exit;
     }
 
     $email = filter_input(INPUT_POST, 'admin_email', FILTER_VALIDATE_EMAIL);
@@ -95,7 +101,7 @@ function handle_registration_start($pdo) {
             $pdo->commit();
 
             unset($_SESSION['registration_data']);
-            header('Location: /register_success.php?status=freemium');
+            header('Location: /register_pending_verification.php');
             exit;
 
         } catch (PDOException $e) {
@@ -194,17 +200,33 @@ function create_school_and_admin($pdo, $reg_data, $status, $slots) {
     ]);
     $school_id = $pdo->lastInsertId();
 
-    // Create admin user
+    // Generate a verification token
+    $verification_token = bin2hex(random_bytes(32));
+
+    // Create admin user with unverified status
     $stmt_user = $pdo->prepare(
-        "INSERT INTO users (school_id, email, password, full_name, role)
-         VALUES (:sid, :email, :pass, :name, 'school_admin')"
+        "INSERT INTO users (school_id, email, password, full_name, role, status, email_verification_token)
+         VALUES (:sid, :email, :pass, :name, 'school_admin', 'unverified', :token)"
     );
     $stmt_user->execute([
         ':sid' => $school_id,
         ':email' => $reg_data['admin_email'],
         ':pass' => password_hash($reg_data['admin_password'], PASSWORD_BCRYPT),
-        ':name' => $reg_data['admin_name']
+        ':name' => $reg_data['admin_name'],
+        ':token' => $verification_token
     ]);
+
+    // Send verification email
+    $verification_link = get_site_url() . "/verify_email.php?token=" . $verification_token;
+    $subject = "Verify Your Email Address";
+    $body = "
+        <p>Hi " . htmlspecialchars($reg_data['admin_name']) . ",</p>
+        <p>Thanks for registering. Please click the link below to verify your email address:</p>
+        <p><a href='" . $verification_link . "'>" . $verification_link . "</a></p>
+        <p>If you did not register, please ignore this email.</p>
+    ";
+    send_email($pdo, $reg_data['admin_email'], $subject, $body);
+
 
     return $school_id;
 }
