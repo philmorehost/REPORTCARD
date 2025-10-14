@@ -213,6 +213,11 @@ try {
         }
     }
 
+    // --- Add optional custom_domain to schools table ---
+    if (!column_exists($pdo, 'schools', 'custom_domain')) {
+        $pdo->exec("ALTER TABLE `schools` ADD COLUMN `custom_domain` VARCHAR(255) NULL DEFAULT NULL AFTER `language`;");
+    }
+
     // --- Add hero_image_url to system_settings if it doesn't exist ---
     $stmt_check_hero = $pdo->prepare("SELECT COUNT(*) FROM system_settings WHERE setting_key = 'hero_image_url'");
     $stmt_check_hero->execute();

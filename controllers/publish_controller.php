@@ -102,13 +102,15 @@ function handle_publish_bulk($pdo, $school_id) {
 function publish_student_report($pdo, $school_id, $student_id, $academic_period, $email_template_id, $send_sms) {
     $pdo->beginTransaction();
     try {
-        $system_url = s_get($pdo, 'system_url', APP_URL);
-        if (empty($system_url)) {
-            throw new Exception("Critical Error: The System Base URL is not configured.");
+        // Use the new helper to get the correct domain for the school
+        $domain = get_school_domain($pdo, $school_id);
+        if (empty($domain)) {
+            throw new Exception("Critical Error: The report card domain could not be determined.");
         }
 
         $snapshot = [];
-        $snapshot['system_url'] = $system_url;
+        // Store the determined domain in the snapshot for consistency
+        $snapshot['system_url'] = $domain;
         $snapshot['site_name'] = s_get($pdo, 'site_name', 'Automated Report Card System');
 
         $stmt_school = $pdo->prepare("SELECT s.name, s.address, s.logo_url, s.brand_color, p.name as package_name FROM schools s LEFT JOIN packages p ON s.package_id = p.id WHERE s.id = :id");

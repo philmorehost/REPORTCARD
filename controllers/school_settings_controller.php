@@ -41,12 +41,25 @@ function handle_update_settings($pdo, $school_id) {
         return;
     }
 
-    try {
-        // Update language in the `schools` table
-        $stmt_lang = $pdo->prepare("UPDATE schools SET language = :language WHERE id = :id");
-        $stmt_lang->execute(['language' => $language, 'id' => $school_id]);
+    // --- Sanitize and Validate Custom Domain ---
+    $custom_domain = trim($_POST['custom_domain'] ?? '');
+    if (!empty($custom_domain) && !filter_var('http://' . $custom_domain, FILTER_VALIDATE_URL)) {
+        redirect_with_message('Invalid domain name format provided.', 'error');
+        return;
+    }
+    // If domain is empty, store it as NULL
+    $custom_domain = !empty($custom_domain) ? $custom_domain : null;
 
-        redirect_with_message('Language setting updated successfully.', 'success');
+    try {
+        // Update language and custom domain in the `schools` table
+        $stmt = $pdo->prepare("UPDATE schools SET language = :language, custom_domain = :custom_domain WHERE id = :id");
+        $stmt->execute([
+            'language' => $language,
+            'custom_domain' => $custom_domain,
+            'id' => $school_id
+        ]);
+
+        redirect_with_message('Settings updated successfully.', 'success');
 
     } catch (PDOException $e) {
         redirect_with_message('Database error: ' . $e->getMessage(), 'error');

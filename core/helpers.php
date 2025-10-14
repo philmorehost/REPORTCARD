@@ -152,4 +152,33 @@ function get_site_url() {
     $host = $_SERVER['HTTP_HOST'];
     return $protocol . $host;
 }
+
+/**
+ * Gets the domain for a given school, falling back to the system default.
+ *
+ * @param PDO $pdo The database connection object.
+ * @param int $school_id The ID of the school.
+ * @return string The domain to use for links.
+ */
+function get_school_domain($pdo, $school_id) {
+    try {
+        $stmt = $pdo->prepare("SELECT custom_domain FROM schools WHERE id = :id");
+        $stmt->execute(['id' => $school_id]);
+        $school = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($school && !empty($school['custom_domain'])) {
+            // Ensure the custom domain has a protocol for consistency
+            if (strpos($school['custom_domain'], 'http') !== 0) {
+                return 'https://' . $school['custom_domain'];
+            }
+            return rtrim($school['custom_domain'], '/');
+        }
+    } catch (PDOException $e) {
+        error_log("Could not fetch school custom domain: " . $e->getMessage());
+        // Fall through to default
+    }
+
+    // Fallback to the main system URL
+    return rtrim(s_get($pdo, 'system_url', get_site_url()), '/');
+}
 ?>

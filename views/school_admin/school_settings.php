@@ -48,6 +48,20 @@ $system_url = s_get($pdo, 'system_url', rtrim(APP_URL, '/'));
                     </div>
                 </div>
 
+                <!-- Custom Domain Card -->
+                <div class="card shadow mb-4">
+                    <div class="card-header">
+                        <h6 class="m-0 fw-bold text-primary">Custom Report Card Domain</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="custom_domain" class="form-label">Optional: Enter a custom domain for report card links.</label>
+                            <input type="text" class="form-control" id="custom_domain" name="custom_domain" value="<?php echo htmlspecialchars($school['custom_domain'] ?? ''); ?>" placeholder="e.g., reports.myschool.com">
+                            <div class="form-text">If left empty, the default system domain will be used: <strong><?php echo htmlspecialchars($system_url); ?></strong></div>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-primary btn-lg">Save All Settings</button>
 
                 <!-- Close Account Card -->
