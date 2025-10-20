@@ -105,6 +105,8 @@ if ($action === 'upgrade') {
 
     if ($slots_to_purchase <= 0 || $package_id <= 0) {
         $_SESSION['error'] = 'Invalid slot quantity or package for upgrade.';
+        // Redirect back to the specific upgrade page if pkg_id is known
+        $redirect_path = $package_id ? "/views/school_admin/upgrade_package.php?pkg_id={$package_id}" : $redirect_path;
         header("Location: {$redirect_path}");
         exit;
     }
@@ -112,14 +114,14 @@ if ($action === 'upgrade') {
     $stmt_price = $pdo->prepare("SELECT price, name FROM packages WHERE id = :id");
     $stmt_price->execute(['id' => $package_id]);
     $package_info = $stmt_price->fetch(PDO::FETCH_ASSOC);
-    $price_per_slot = (float)($package_info['price'] ?? 0);
 
-    if ($price_per_slot <= 0) {
+    if (!$package_info || $package_info['price'] <= 0) {
         $_SESSION['error'] = 'This package cannot be upgraded to.';
-        header("Location: {$redirect_path}");
+        header("Location: /views/school_admin/upgrade_package.php?pkg_id={$package_id}");
         exit;
     }
 
+    $price_per_slot = (float)$package_info['price'];
     $amount = $slots_to_purchase * $price_per_slot;
 
     $transaction_data = [
@@ -132,6 +134,8 @@ if ($action === 'upgrade') {
     ];
     $metadata = ['purchase_type' => 'upgrade', 'slots' => $slots_to_purchase, 'new_package_id' => $package_id];
     $customization_description = "Upgrade to " . $package_info['name'] . " and purchase of {$slots_to_purchase} student slots.";
+    // Overwrite purchase_type for fee calculation
+    $purchase_type = 'upgrade';
 }
 
 // --- Calculate final amount with fees ---

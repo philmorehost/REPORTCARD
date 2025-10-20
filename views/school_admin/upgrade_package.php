@@ -78,7 +78,7 @@ include 'partials/header.php';
                             <?php if ($flutterwave_enabled): ?>
                                 <button type="button" class="btn btn-warning btn-lg" data-gateway="/controllers/flutterwave_controller.php?action=upgrade">Pay with Flutterwave</button>
                             <?php endif; ?>
-                            <button type="button" class="btn btn-secondary btn-lg" data-gateway="/controllers/registration_controller.php?action=upgrade_bank_transfer">Pay by Bank Transfer</button>
+                            <button type="button" class="btn btn-secondary btn-lg" data-gateway="/controllers/upgrade_controller.php">Pay by Bank Transfer</button>
                         </div>
                     </form>
                 </div>
