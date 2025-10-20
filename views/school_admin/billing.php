@@ -86,7 +86,7 @@ try {
                                         <h5 class="mb-1"><?php echo htmlspecialchars($pkg['name']); ?></h5>
                                         <small><?php echo $currency_symbol . number_format($pkg['price'], 2); ?> / student</small>
                                     </div>
-                                    <p class="mb-1"><?php echo htmlspecialchars($pkg['description']); ?></p>
+                                    <p class="mb-1"><?php echo htmlspecialchars($pkg['description'] ?? 'No description available.'); ?></p>
                                 </a>
                             <?php endforeach; ?>
                         </div>
