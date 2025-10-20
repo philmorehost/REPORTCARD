@@ -365,6 +365,11 @@ try {
         ");
     }
 
+    // --- Add metadata column to payment_transactions for storing upgrade details ---
+    if (table_exists($pdo, 'payment_transactions') && !column_exists($pdo, 'payment_transactions', 'metadata')) {
+        $pdo->exec("ALTER TABLE `payment_transactions` ADD COLUMN `metadata` TEXT NULL DEFAULT NULL AFTER `reference`;");
+    }
+
 } catch (PDOException $e) {
     // If the upgrade fails, it's a critical error.
     die("CRITICAL ERROR: Could not update the database schema. " . $e->getMessage());

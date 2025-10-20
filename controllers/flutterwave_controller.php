@@ -41,7 +41,44 @@ $customer_email = $customer['email'];
 $customer_name = $customer['full_name'];
 
 // --- Logic for different purchase types ---
-if ($purchase_type === 'sms_credits') {
+if ($action === 'upgrade') {
+    $redirect_path = '/views/school_admin/billing.php'; // Fallback
+    $slots_to_purchase = (int)($_POST['slot_quantity'] ?? 0);
+    $package_id = (int)($_POST['package_id'] ?? 0);
+    $purchase_type = 'upgrade'; // Set purchase type for fee calculation
+
+    if ($slots_to_purchase <= 0 || $package_id <= 0) {
+        $_SESSION['error'] = 'Invalid slot quantity or package for upgrade.';
+        $redirect_path = $package_id ? "/views/school_admin/upgrade_package.php?pkg_id={$package_id}" : $redirect_path;
+        header("Location: {$redirect_path}");
+        exit;
+    }
+
+    $stmt_price = $pdo->prepare("SELECT price, name FROM packages WHERE id = :id");
+    $stmt_price->execute(['id' => $package_id]);
+    $package_info = $stmt_price->fetch(PDO::FETCH_ASSOC);
+
+    if (!$package_info || $package_info['price'] <= 0) {
+        $_SESSION['error'] = 'This package cannot be upgraded to.';
+        header("Location: /views/school_admin/upgrade_package.php?pkg_id={$package_id}");
+        exit;
+    }
+
+    $price_per_slot = (float)$package_info['price'];
+    $amount = $slots_to_purchase * $price_per_slot;
+
+    $transaction_data = [
+        'type' => 'upgrade',
+        'slots' => $slots_to_purchase,
+        'package_id' => $package_id,
+        'amount' => $amount,
+        'school_id' => $school_id,
+        'is_registration' => false
+    ];
+    $metadata = ['purchase_type' => 'upgrade', 'slots' => $slots_to_purchase, 'new_package_id' => $package_id];
+    $customization_description = "Upgrade to " . $package_info['name'] . " and purchase of {$slots_to_purchase} student slots.";
+
+} elseif ($purchase_type === 'sms_credits') {
     $redirect_path = '/views/school_admin/sms.php';
     $credits_to_purchase = (int)($_POST['credit_quantity'] ?? 0);
 
@@ -95,47 +132,6 @@ if ($purchase_type === 'sms_credits') {
     ];
     $metadata = ['purchase_type' => 'slot_purchase', 'slots' => $slots_to_purchase];
     $customization_description = "Payment for {$slots_to_purchase} student slots.";
-}
-
-// Handle upgrade logic, which is a variation of slot purchase
-if ($action === 'upgrade') {
-    $redirect_path = '/views/school_admin/billing.php';
-    $slots_to_purchase = (int)($_POST['slot_quantity'] ?? 0);
-    $package_id = (int)($_POST['package_id'] ?? 0);
-
-    if ($slots_to_purchase <= 0 || $package_id <= 0) {
-        $_SESSION['error'] = 'Invalid slot quantity or package for upgrade.';
-        // Redirect back to the specific upgrade page if pkg_id is known
-        $redirect_path = $package_id ? "/views/school_admin/upgrade_package.php?pkg_id={$package_id}" : $redirect_path;
-        header("Location: {$redirect_path}");
-        exit;
-    }
-
-    $stmt_price = $pdo->prepare("SELECT price, name FROM packages WHERE id = :id");
-    $stmt_price->execute(['id' => $package_id]);
-    $package_info = $stmt_price->fetch(PDO::FETCH_ASSOC);
-
-    if (!$package_info || $package_info['price'] <= 0) {
-        $_SESSION['error'] = 'This package cannot be upgraded to.';
-        header("Location: /views/school_admin/upgrade_package.php?pkg_id={$package_id}");
-        exit;
-    }
-
-    $price_per_slot = (float)$package_info['price'];
-    $amount = $slots_to_purchase * $price_per_slot;
-
-    $transaction_data = [
-        'type' => 'upgrade', // New type
-        'slots' => $slots_to_purchase,
-        'package_id' => $package_id,
-        'amount' => $amount,
-        'school_id' => $school_id,
-        'is_registration' => false
-    ];
-    $metadata = ['purchase_type' => 'upgrade', 'slots' => $slots_to_purchase, 'new_package_id' => $package_id];
-    $customization_description = "Upgrade to " . $package_info['name'] . " and purchase of {$slots_to_purchase} student slots.";
-    // Overwrite purchase_type for fee calculation
-    $purchase_type = 'upgrade';
 }
 
 // --- Calculate final amount with fees ---
