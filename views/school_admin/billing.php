@@ -66,15 +66,20 @@ try {
         <!-- Purchase More Slots -->
         <div class="col-lg-5">
             <div class="card shadow mb-4">
-                <div class="card-header py-3"><h6 class="m-0 fw-bold text-primary">Upgrade Plan & Purchase Slots</h6></div>
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <?php echo $is_freemium ? 'Upgrade Your Plan' : 'Purchase More Slots'; ?>
+                    </h6>
+                </div>
                 <div class="card-body">
                     <?php if ($is_freemium): ?>
+
                         <div class="alert alert-info">
                             <strong>You are on the Freemium Plan.</strong><br>
-                            To enroll more students beyond your current limit, please upgrade to a Premium plan.
+                            To enroll more students and unlock premium features, please upgrade your plan.
                         </div>
 
-                        <h5>Available Plans for Upgrade</h5>
+                        <h5>Available Premium Plans</h5>
                         <?php
                         $stmt_packages = $pdo->query("SELECT * FROM packages WHERE price > 0 ORDER BY price ASC");
                         $upgrade_packages = $stmt_packages->fetchAll(PDO::FETCH_ASSOC);
@@ -90,32 +95,34 @@ try {
                                 </a>
                             <?php endforeach; ?>
                         </div>
-                        <hr>
+
+                    <?php else: // This block is for PREMIUM users ?>
+
+                        <p>Need to enroll more students? You can purchase additional student slots for your school at any time.</p>
+                        <form id="purchaseForm" method="POST">
+                            <div class="mb-3">
+                                <label for="slot_quantity" class="form-label">Number of Slots to Purchase:</label>
+                                <input type="number" class="form-control" name="slot_quantity" id="slot_quantity" value="50" min="1">
+                            </div>
+                            <div class="alert alert-info">
+                                <strong>Price:</strong> <?php echo $currency_symbol; ?><?php echo number_format($price_per_slot, 2); ?> per student / termly
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <?php if ($paystack_enabled || $flutterwave_enabled): ?>
+                                    <?php if ($paystack_enabled): ?>
+                                        <button type="button" class="btn btn-primary" data-gateway="/controllers/paystack_controller.php">Pay with Paystack</button>
+                                    <?php endif; ?>
+                                    <?php if ($flutterwave_enabled): ?>
+                                        <button type="button" class="btn btn-warning" data-gateway="/controllers/flutterwave_controller.php">Pay with Flutterwave</button>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <p class="text-muted text-center">No online payment gateways are currently enabled. Please contact the administrator.</p>
+                                <?php endif; ?>
+                            </div>
+                        </form>
+
                     <?php endif; ?>
-
-                    <p>Need to enroll more students? You can purchase additional student slots for your school at any time.</p>
-                    <form id="purchaseForm" method="POST">
-                        <div class="mb-3">
-                            <label for="slot_quantity" class="form-label">Number of Slots to Purchase:</label>
-                            <input type="number" class="form-control" name="slot_quantity" id="slot_quantity" value="50" min="1" <?php if ($is_freemium) echo 'disabled'; ?>>
-                        </div>
-                        <div class="alert alert-info"><strong>Price:</strong> <?php echo $currency_symbol; ?><?php echo number_format($price_per_slot, 2); ?> per student / termly</div>
-
-                        <div class="d-grid gap-2">
-                            <?php if ($paystack_enabled): ?>
-                                <button type="button" class="btn btn-primary" data-gateway="/controllers/paystack_controller.php" <?php if ($is_freemium) echo 'disabled'; ?>>Pay with Paystack</button>
-                            <?php endif; ?>
-                            <?php if ($flutterwave_enabled): ?>
-                                <button type="button" class="btn btn-warning" data-gateway="/controllers/flutterwave_controller.php" <?php if ($is_freemium) echo 'disabled'; ?>>Pay with Flutterwave</button>
-                            <?php endif; ?>
-                            <?php if (!$paystack_enabled && !$flutterwave_enabled): ?>
-                                <p class="text-muted text-center">No online payment gateways are currently enabled. Please contact the administrator.</p>
-                            <?php endif; ?>
-                        </div>
-                         <?php if ($is_freemium): ?>
-                            <small class="text-muted d-block mt-2">Slot purchases are enabled once you upgrade to a premium plan.</small>
-                        <?php endif; ?>
-                    </form>
                 </div>
             </div>
         </div>
