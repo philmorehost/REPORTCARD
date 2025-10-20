@@ -20,6 +20,10 @@ switch ($action) {
     case 'process_payment': // A single handler for both payment types
         handle_payment_processing($pdo);
         break;
+    case 'upgrade_bank_transfer':
+        require_auth('school_admin'); // Ensure user is logged in
+        handle_upgrade_bank_transfer($pdo);
+        break;
     default:
         $_SESSION['error'] = 'Invalid action specified.';
         header('Location: /register.php');
@@ -246,5 +250,66 @@ function create_school_and_admin($pdo, $reg_data, $status, $slots) {
     }
 
     return $school_id;
+}
+
+/**
+ * Handles an upgrade request for an existing school via Bank Transfer.
+ */
+function handle_upgrade_bank_transfer($pdo) {
+    $school_id = $_SESSION['school_id'];
+    $package_id = $_POST['package_id'] ?? 0;
+    $slots = filter_input(INPUT_POST, 'slot_quantity', FILTER_VALIDATE_INT);
+
+    if (!$package_id || $slots === false || $slots <= 0) {
+        $_SESSION['message'] = 'Invalid package or slot quantity for upgrade.';
+        $_SESSION['message_type'] = 'error';
+        header('Location: /views/school_admin/billing.php');
+        exit;
+    }
+
+    try {
+        $stmt_pkg = $pdo->prepare("SELECT * FROM packages WHERE id = :id");
+        $stmt_pkg->execute([':id' => $package_id]);
+        $package = $stmt_pkg->fetch(PDO::FETCH_ASSOC);
+
+        if (!$package || (float)$package['price'] <= 0) {
+            throw new Exception("Invalid premium package selected.");
+        }
+
+        $amount = $slots * (float)$package['price'];
+        $description = "Upgrade to " . $package['name'] . " with " . $slots . " student slots.";
+
+        $pdo->beginTransaction();
+
+        // Create a pending transaction
+        $stmt_trans = $pdo->prepare(
+            "INSERT INTO payment_transactions (school_id, description, amount, payment_method, status)
+             VALUES (:sid, :desc, :amount, 'bank_transfer', 'pending')"
+        );
+        $stmt_trans->execute([
+            ':sid' => $school_id,
+            ':desc' => $description,
+            ':amount' => $amount
+        ]);
+        $transaction_id = $pdo->lastInsertId();
+
+        // Store info for the bank transfer page
+        $_SESSION['pending_transaction_id'] = $transaction_id;
+        $_SESSION['pending_amount'] = $amount;
+        $_SESSION['is_upgrade'] = true; // Differentiates from new registration
+
+        $pdo->commit();
+        header('Location: /register_bank_transfer.php'); // Redirect to the same bank info page
+        exit;
+
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $_SESSION['message'] = 'Error processing upgrade: ' . $e->getMessage();
+        $_SESSION['message_type'] = 'error';
+        header('Location: /views/school_admin/billing.php');
+        exit;
+    }
 }
 ?>

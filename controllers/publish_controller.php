@@ -246,8 +246,6 @@ function handle_view_report($pdo, $school_id) {
         $stmt_school = $pdo->prepare("SELECT s.name, s.address, s.logo_url, s.brand_color, p.name as package_name FROM schools s LEFT JOIN packages p ON s.package_id = p.id WHERE s.id = :id");
         $stmt_school->execute(['id' => $school_id]);
         $data['school_info'] = $stmt_school->fetch(PDO::FETCH_ASSOC);
-        $is_freemium = (isset($data['school_info']['package_name']) && strtolower($data['school_info']['package_name']) === 'freemium');
-
         // Principal's signature
         $stmt_admin = $pdo->prepare("SELECT id FROM users WHERE school_id = :school_id AND role = 'school_admin' LIMIT 1");
         $stmt_admin->execute(['school_id' => $school_id]);
@@ -271,7 +269,7 @@ function handle_view_report($pdo, $school_id) {
         $stmt_settings->execute(['id' => $school_id]);
         $report_settings = $stmt_settings->fetch(PDO::FETCH_ASSOC);
 
-        $template_id = $is_freemium ? 1 : ($report_settings['template_id'] ?? 1);
+        $template_id = $report_settings['template_id'] ?? 1;
         $data['report_structure'] = [
             'template_id' => $template_id,
             'columns' => $report_settings ? json_decode($report_settings['columns'], true) : ['Term Score', 'Remark']
@@ -296,14 +294,8 @@ function handle_view_report($pdo, $school_id) {
         echo '<style>
                 body { background-color: #f0f2f5; display: flex; justify-content: center; padding: 2rem; }
                 .report-container { position: relative; max-width: 800px; width: 100%; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
-                .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 5rem; color: rgba(0, 0, 0, 0.08); font-weight: bold; pointer-events: none; z-index: 1000; text-transform: uppercase; }
               </style>';
         echo '</head><body><div class="report-container">';
-
-        if ($is_freemium) {
-            $site_name = s_get($pdo, 'site_name', 'Freemium Plan');
-            echo '<div class="watermark"><span>' . htmlspecialchars($site_name) . '</span></div>';
-        }
 
         function d_get($key, $default = '') {
             global $data;

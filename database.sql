@@ -446,7 +446,7 @@ CREATE TABLE IF NOT EXISTS `sms_log` (
 -- Seeding data
 --
 INSERT IGNORE INTO `packages` (`id`, `name`, `price`, `student_limit`, `features`) VALUES
-(1, 'Freemium', 0.00, 50, '["A single template","cannot print","cannot copy","cannot save","cannot share report card link","cannot download","can add logo report card template","can view report card","report card should be watermarked"]'),
+(1, 'Freemium', 0.00, 5, '["A single template","cannot print","cannot copy","cannot save","cannot share report card link","cannot download","can add logo report card template","can view report card"]'),
 (2, 'Premium', 10.00, 0, '["Multiple templates and Access to new templates","can print","can copy","can save","can share report card link","can download","can add logo report card template","can view report card","watermark is removed"]');
 
 INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`) VALUES

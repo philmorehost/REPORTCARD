@@ -183,6 +183,23 @@ function process_successful_payment($pdo, $purchase_id, $details, $transaction_r
             $stmt_update = $pdo->prepare("UPDATE schools SET sms_credits = sms_credits + :credits WHERE id = :id");
             $stmt_update->execute([':credits' => $details['credits'], ':id' => $school_id]);
 
+        } elseif ($purchase_type === 'upgrade') {
+            // Check if this transaction has already been processed
+            $stmt_check = $pdo->prepare("SELECT id FROM payment_transactions WHERE reference = :ref");
+            $stmt_check->execute([':ref' => $transaction_ref]);
+            if ($stmt_check->fetch()) {
+                redirect_to_success_page($details, $purchase_id);
+                return;
+            }
+
+            // Update school's package and add slots
+            $stmt_update = $pdo->prepare("UPDATE schools SET package_id = :pid, student_slots = student_slots + :slots, status = 'active' WHERE id = :id");
+            $stmt_update->execute([':pid' => $details['package_id'], ':slots' => $details['slots'], ':id' => $school_id]);
+
+            $description = "Upgrade to new package with purchase of " . number_format($details['slots']) . " student slots.";
+            $stmt_trans = $pdo->prepare("INSERT INTO payment_transactions (school_id, description, amount, payment_method, status, reference) VALUES (:sid, :desc, :amount, :method, 'completed', :ref)");
+            $stmt_trans->execute([':sid' => $school_id, ':desc' => $description, ':amount' => $details['amount'], ':method' => ucfirst($_GET['gateway']), ':ref' => $transaction_ref]);
+
         } elseif ($purchase_type === 'slot_purchase') {
             // Check if this transaction has already been processed
             $stmt_check = $pdo->prepare("SELECT id FROM payment_transactions WHERE reference = :ref");

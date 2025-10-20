@@ -13,8 +13,9 @@ require_once __DIR__ . '/../core/init.php';
 file_put_contents(__DIR__ . '/../debug_log.txt', "Paystack POST: " . print_r($_POST, true) . "\n", FILE_APPEND);
 
 // --- Determine Context ---
+$action = $_GET['action'] ?? 'purchase'; // 'purchase' or 'upgrade'
 $purchase_type = $_POST['purchase_type'] ?? 'slot_purchase';
-$is_registration = false; // WhatsApp credits can't be bought during registration
+$is_registration = false; // This controller is not for new registrations
 $is_existing_school = isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'school_admin';
 $school_id = $_SESSION['school_id'] ?? null;
 
@@ -91,6 +92,41 @@ if ($purchase_type === 'sms_credits') {
         'is_registration' => false
     ];
     $metadata = ['purchase_type' => 'slot_purchase', 'slots' => $slots_to_purchase];
+}
+
+// Handle upgrade logic, which is a variation of slot purchase
+if ($action === 'upgrade') {
+    $redirect_path = '/views/school_admin/billing.php';
+    $slots_to_purchase = (int)($_POST['slot_quantity'] ?? 0);
+    $package_id = (int)($_POST['package_id'] ?? 0);
+
+    if ($slots_to_purchase <= 0 || $package_id <= 0) {
+        $_SESSION['error'] = 'Invalid slot quantity or package for upgrade.';
+        header("Location: {$redirect_path}");
+        exit;
+    }
+
+    $stmt_price = $pdo->prepare("SELECT price FROM packages WHERE id = :id");
+    $stmt_price->execute(['id' => $package_id]);
+    $price_per_slot = (float)$stmt_price->fetchColumn();
+
+    if ($price_per_slot <= 0) {
+        $_SESSION['error'] = 'This package cannot be upgraded to.';
+        header("Location: {$redirect_path}");
+        exit;
+    }
+
+    $amount = $slots_to_purchase * $price_per_slot;
+
+    $transaction_data = [
+        'type' => 'upgrade', // New type
+        'slots' => $slots_to_purchase,
+        'package_id' => $package_id,
+        'amount' => $amount,
+        'school_id' => $school_id,
+        'is_registration' => false
+    ];
+    $metadata = ['purchase_type' => 'upgrade', 'slots' => $slots_to_purchase, 'new_package_id' => $package_id];
 }
 
 
